@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Name — Personal Site</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <!-- Paystack InlineJS — works in Kenya with M-Pesa, cards, bank transfers -->
+  <script src="https://js.paystack.co/v2/inline.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1a1714; --ink-soft: #5a554f; --ink-faint: #9e988f;
+      --paper: #f7f4ef; --paper-warm: #efe9df;
+      --sidebar-bg: #1e1b17;
+      --sidebar-text: #c8c0b4;
+      --sidebar-active: #c4703a;
+      --sidebar-hover: rgba(255,255,255,0.06);
+      --accent: #c4703a; --accent-pale: #f2e6d9;
+      --border: rgba(26,23,20,0.12); --border-hover: rgba(26,23,20,0.28);
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+      --sidebar-w: 240px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--sans); background: var(--paper); color: var(--ink); min-height: 100vh; display: flex; }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      width: var(--sidebar-w); min-height: 100vh;
+      background: var(--sidebar-bg);
+      position: fixed; top: 0; left: 0;
+      display: flex; flex-direction: column;
+      z-index: 200; transition: transform 0.3s ease;
+    }
+
+    .sidebar-logo { padding: 1.6rem 1.4rem 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .sidebar-logo a { font-family: var(--serif); font-size: 1.15rem; color: #fff; text-decoration: none; }
+    .sidebar-logo p { font-size: 0.72rem; color: rgba(255,255,255,0.3); margin-top: 3px; letter-spacing: 0.06em; }
+
+    .sidebar-section { padding: 1.2rem 0.8rem 0.4rem; }
+    .sidebar-label { font-size: 0.65rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.25); padding: 0 0.6rem; margin-bottom: 0.4rem; }
+
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0.52rem 0.8rem; border-radius: 8px;
+      color: var(--sidebar-text); text-decoration: none;
+      font-size: 0.875rem; font-weight: 400;
+      cursor: pointer; transition: background 0.15s, color 0.15s;
+      border: none; background: none; width: 100%; text-align: left;
+    }
+
+    .sidebar-link:hover { background: var(--sidebar-hover); color: #fff; }
+    .sidebar-link.active { background: rgba(196,112,58,0.18); color: var(--sidebar-active); font-weight: 500; }
+    .sidebar-link .icon { width: 18px; height: 18px; opacity: 0.7; flex-shrink: 0; }
+    .sidebar-link.active .icon { opacity: 1; }
+    .sidebar-link .badge { margin-left: auto; font-size: 0.68rem; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.45); padding: 1px 7px; border-radius: 20px; }
+    .sidebar-link.active .badge { background: rgba(196,112,58,0.25); color: var(--sidebar-active); }
+
+    .tag-filters { padding: 0 0.8rem 0.4rem; }
+    .tag-btn { display: flex; align-items: center; gap: 8px; padding: 0.42rem 0.8rem; border-radius: 6px; color: rgba(200,192,180,0.7); font-size: 0.82rem; cursor: pointer; transition: background 0.15s, color 0.15s; border: none; background: none; width: 100%; text-align: left; }
+    .tag-btn:hover { background: var(--sidebar-hover); color: #fff; }
+    .tag-btn.active { color: var(--sidebar-active); }
+    .tag-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── DONATE BUTTON ── */
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 1rem 1rem 1.2rem;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      display: flex; flex-direction: column; gap: 0.6rem;
+    }
+
+    .donate-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 0.65rem;
+      background: linear-gradient(135deg, #c4703a, #e08840);
+      color: #fff; border: none; border-radius: 10px;
+      font-family: var(--sans); font-size: 0.86rem; font-weight: 500;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+
+    .donate-btn:hover { opacity: 0.9; }
+    .donate-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .dash-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: rgba(200,192,180,0.55); cursor: pointer; border: none; background: none; padding: 0.3rem 0; transition: color 0.15s; width: 100%; }
+    .dash-toggle:hover { color: #fff; }
+
+    /* ── DONATE MODAL ── */
+    .modal-bg {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55); z-index: 500;
+      align-items: center; justify-content: center;
+    }
+
+    .modal-bg.open { display: flex; }
+
+    .modal {
+      background: var(--paper); border-radius: 16px;
+      padding: 2rem; width: 360px; max-width: 95vw;
+      position: relative; animation: popIn 0.2s ease;
+    }
+
+    @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .modal-close { position: absolute; top: 1rem; right: 1rem; border: none; background: none; font-size: 1.2rem; cursor: pointer; color: var(--ink-faint); }
+    .modal h2 { font-family: var(--serif); font-size: 1.5rem; margin-bottom: 0.4rem; }
+    .modal p  { font-size: 0.86rem; color: var(--ink-soft); margin-bottom: 1.5rem; line-height: 1.6; }
+
+    .amount-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.6rem; margin-bottom: 1rem; }
+
+    .amount-btn {
+      padding: 0.65rem; border: 1px solid var(--border);
+      border-radius: 8px; background: var(--paper);
+      font-family: var(--sans); font-size: 0.9rem;
+      cursor: pointer; transition: all 0.15s; text-align: center;
+      color: var(--ink);
+    }
+
+    .amount-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .amount-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .amount-custom {
+      width: 100%; padding: 0.6rem 0.85rem; margin-bottom: 1.2rem;
+      border: 1px solid var(--border); border-radius: 8px;
+      font-family: var(--sans); font-size: 0.9rem; color: var(--ink);
+      background: var(--paper); outline: none; transition: border-color 0.15s;
+    }
+
+    .amount-custom:focus { border-color: var(--accent); }
+
+    /* IntaSend button styles — it injects a button, we style it */
+    #intasend-pay-btn button,
+    .intasend-pay-btn-wrapper button {
+      width: 100%; padding: 0.75rem;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 10px;
+      font-family: var(--sans); font-size: 0.95rem; font-weight: 500;
+      cursor: pointer;
+    }
+
+    /* ── MAIN ── */
+    #main { margin-left: var(--sidebar-w); flex: 1; min-width: 0; }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(247,244,239,0.9); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      height: 52px; display: flex; align-items: center; padding: 0 2rem; gap: 1rem;
+    }
+
+    .topbar-title { font-family: var(--serif); font-size: 1rem; color: var(--ink); }
+    .menu-btn { display: none; border: none; background: none; cursor: pointer; color: var(--ink); padding: 4px; }
+
+    /* ── PAGES ── */
+    .page { display: none; animation: fadein 0.25s ease; }
+    .page.active { display: block; }
+    @keyframes fadein { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+    /* ── HERO ── */
+    .hero { padding: 5rem 2.5rem 3rem; max-width: 700px; }
+    .hero-eyebrow { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 1rem; }
+    .hero h1 { font-family: var(--serif); font-size: clamp(2.4rem, 5vw, 4.2rem); line-height: 1.08; margin-bottom: 1.4rem; }
+    .hero h1 em { font-style: italic; color: var(--accent); }
+    .hero p { font-size: 1rem; color: var(--ink-soft); max-width: 520px; line-height: 1.75; }
+    .hero-divider { width: 40px; height: 2px; background: var(--accent); margin: 2rem 0; }
+
+    /* ── CONTENT SECTIONS ── */
+    .content-section { padding: 2.5rem 2.5rem 4rem; }
+    .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap; }
+    .section-title { font-family: var(--serif); font-size: 1.8rem; font-weight: 400; }
+    .section-tag { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
+
+    /* ── MASONRY GRID (Pinterest style) ── */
+    .masonry {
+      columns: 3 220px;
+      gap: 1rem;
+    }
+
+    .masonry-item {
+      break-inside: avoid;
+      border-radius: 10px; overflow: hidden;
+      background: var(--paper-warm);
+      border: 1px solid var(--border);
+      margin-bottom: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .masonry-item:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(26,23,20,0.1); }
+
+    .masonry-item img { width: 100%; display: block; object-fit: cover; }
+    .masonry-item video { width: 100%; display: block; max-height: 280px; object-fit: cover; }
+    .masonry-info { padding: 0.65rem 0.9rem 0.8rem; }
+    .masonry-title { font-size: 0.88rem; font-weight: 500; }
+    .masonry-meta  { font-size: 0.72rem; color: var(--ink-faint); margin-top: 2px; }
+
+    /* PDF row */
+    .pdf-list { display: flex; flex-direction: column; gap: 0.7rem; }
+    .pdf-item { display: flex; align-items: center; gap: 1rem; padding: 0.9rem 1.1rem; background: var(--paper); border: 1px solid var(--border); border-radius: 10px; text-decoration: none; color: var(--ink); transition: border-color 0.15s, background 0.15s, transform 0.15s; }
+    .pdf-item:hover { border-color: var(--border-hover); background: var(--accent-pale); transform: translateX(4px); }
+    .pdf-icon { width: 38px; height: 38px; background: #e8302a; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pdf-icon svg { width: 18px; height: 18px; fill: #fff; }
+    .pdf-details { flex: 1; min-width: 0; }
+    .pdf-name { font-size: 0.9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pdf-meta  { font-size: 0.74rem; color: var(--ink-faint); margin-top: 2px; }
+    .pdf-arrow { color: var(--ink-faint); }
+
+    /* Blog */
+    .blog-filter-bar { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.8rem; }
+    .filter-chip { font-size: 0.78rem; font-weight: 500; padding: 0.35rem 0.9rem; border-radius: 20px; border: 1px solid var(--border); background: var(--paper); color: var(--ink-soft); cursor: pointer; transition: all 0.15s; }
+    .filter-chip:hover { border-color: var(--border-hover); color: var(--ink); }
+    .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.4rem; }
+    .blog-card { background: var(--paper); border: 1px solid var(--border); border-radius: 10px; padding: 1.4rem; text-decoration: none; color: var(--ink); display: flex; flex-direction: column; gap: 0.55rem; transition: transform 0.2s, box-shadow 0.2s; }
+    .blog-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(26,23,20,0.08); }
+    .blog-tag { display: inline-block; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; align-self: flex-start; }
+    .blog-tag.personal { background: #f2e6d9; color: #96481f; }
+    .blog-tag.tech     { background: #dceeff; color: #1a5fa8; }
+    .blog-tag.creative { background: #e8f5e0; color: #2e6e14; }
+    .blog-tag.life     { background: #f5e6ff; color: #7c2fa8; }
+    .blog-title   { font-family: var(--serif); font-size: 1.1rem; line-height: 1.35; }
+    .blog-excerpt { font-size: 0.85rem; color: var(--ink-soft); line-height: 1.65; }
+    .blog-date    { font-size: 0.74rem; color: var(--ink-faint); margin-top: auto; padding-top: 0.4rem; }
+
+    /* Dashboard */
+    .dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
+    .stat-card { background: var(--paper); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.2rem; }
+    .stat-label { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.4rem; }
+    .stat-value { font-family: var(--serif); font-size: 2rem; color: var(--ink); line-height: 1; }
+    .stat-sub   { font-size: 0.74rem; color: var(--ink-faint); margin-top: 4px; }
+    .dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    .dash-card { background: var(--paper); border: 1px solid var(--border); border-radius: 10px; padding: 1.3rem 1.4rem; }
+    .dash-card-title { font-size: 0.78rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 1.2rem; }
+    .bar-chart { display: flex; flex-direction: column; gap: 0.7rem; }
+    .bar-row { display: flex; align-items: center; gap: 0.75rem; }
+    .bar-label { font-size: 0.8rem; color: var(--ink-soft); width: 70px; flex-shrink: 0; }
+    .bar-track { flex: 1; height: 8px; background: var(--paper-warm); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+    .bar-count { font-size: 0.78rem; color: var(--ink-faint); width: 24px; text-align: right; flex-shrink: 0; }
+    .heatmap-wrap { overflow-x: auto; }
+    .heatmap { display: flex; gap: 3px; padding-bottom: 0.5rem; }
+    .heatmap-col { display: flex; flex-direction: column; gap: 3px; }
+    .heatmap-cell { width: 12px; height: 12px; border-radius: 2px; background: var(--paper-warm); }
+    .heatmap-cell[data-level="1"] { background: #f2d5be; }
+    .heatmap-cell[data-level="2"] { background: #e0a87a; }
+    .heatmap-cell[data-level="3"] { background: #c4703a; }
+    .heatmap-cell[data-level="4"] { background: #8f4820; }
+    .donut-wrap { display: flex; align-items: center; gap: 1.5rem; }
+    .donut-legend { display: flex; flex-direction: column; gap: 0.5rem; }
+    .legend-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--ink-soft); }
+    .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .activity-list { display: flex; flex-direction: column; }
+    .activity-item { display: flex; align-items: flex-start; gap: 0.9rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+    .activity-text { font-size: 0.84rem; color: var(--ink-soft); line-height: 1.45; }
+    .activity-text strong { color: var(--ink); font-weight: 500; }
+    .activity-time { font-size: 0.72rem; color: var(--ink-faint); margin-top: 1px; }
+
+    /* Empty states */
+    .empty-state { padding: 3rem 0; text-align: center; color: var(--ink-faint); font-size: 0.9rem; }
+
+    /* Loading shimmer */
+    .shimmer { background: linear-gradient(90deg, var(--paper-warm) 25%, #e8e2d8 50%, var(--paper-warm) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 8px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* Mobile */
+    #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 150; }
+    @media (max-width: 720px) {
+      #sidebar { transform: translateX(-100%); }
+      #sidebar.open { transform: translateX(0); }
+      #sidebar-overlay.open { display: block; }
+      #main { margin-left: 0; }
+      .menu-btn { display: flex; }
+      .dash-row { grid-template-columns: 1fr; }
+      .hero { padding: 3rem 1.4rem 2rem; }
+      .content-section { padding: 2rem 1.4rem 3rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <a href="#" onclick="showPage('home')">Your Name</a>
+    <p>Personal space</p>
+  </div>
+
+  <div class="sidebar-section">
+    <p class="sidebar-label">Navigate</p>
+    <button class="sidebar-link active" id="nav-home" onclick="showPage('home')">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+      Home
+    </button>
+    <button class="sidebar-link" id="nav-photos" onclick="showPage('photos')">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+      Photos
+      <span class="badge" id="badge-photos">–</span>
+    </button>
+    <button class="sidebar-link" id="nav-videos" onclick="showPage('videos')">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Videos
+      <span class="badge" id="badge-videos">–</span>
+    </button>
+    <button class="sidebar-link" id="nav-files" onclick="showPage('files')">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Files & PDFs
+      <span class="badge" id="badge-files">–</span>
+    </button>
+    <button class="sidebar-link" id="nav-blog" onclick="showPage('blog'); filterBlog('all')">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Blog
+      <span class="badge" id="badge-blog">–</span>
+    </button>
+  </div>
+
+  <!-- Blog tag filters -->
+  <div id="blog-filters-sidebar" style="display:none">
+    <div class="sidebar-section">
+      <p class="sidebar-label">Filter posts</p>
+      <div class="tag-filters">
+        <button class="tag-btn active" id="stag-all"      onclick="filterBlog('all')"><span class="tag-dot" style="background:#9e988f"></span>All posts</button>
+        <button class="tag-btn"        id="stag-personal" onclick="filterBlog('personal')"><span class="tag-dot" style="background:#c4703a"></span>Personal</button>
+        <button class="tag-btn"        id="stag-tech"     onclick="filterBlog('tech')"><span class="tag-dot" style="background:#3a7cc4"></span>Tech</button>
+        <button class="tag-btn"        id="stag-creative" onclick="filterBlog('creative')"><span class="tag-dot" style="background:#4fa832"></span>Creative</button>
+        <button class="tag-btn"        id="stag-life"     onclick="filterBlog('life')"><span class="tag-dot" style="background:#9a32c4"></span>Life</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <!-- DONATE BUTTON -->
+    <button class="donate-btn" onclick="openDonate()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      Support my work
+    </button>
+
+    <button class="dash-toggle" onclick="showPage('dashboard')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Activity Dashboard
+    </button>
+  </div>
+</nav>
+
+<!-- DONATE MODAL -->
+<div class="modal-bg" id="donate-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeDonate()">✕</button>
+    <h2>Support my work ♥</h2>
+    <p>If you enjoy what I share here, a small contribution means a lot. Choose an amount or enter your own.</p>
+
+    <div class="amount-grid">
+      <button class="amount-btn" onclick="selectAmount(50)">Ksh 50</button>
+      <button class="amount-btn" onclick="selectAmount(200)">Ksh 200</button>
+      <button class="amount-btn" onclick="selectAmount(500)">Ksh 500</button>
+    </div>
+
+    <input class="amount-custom" type="number" id="custom-amount" placeholder="Or enter custom amount (Ksh)" min="1" oninput="clearSelectedAmount()" />
+
+    <!--
+      IntaSend Pay Button
+      Replace data-public-key with YOUR IntaSend public key.
+      The amount and currency are set dynamically via JS when user clicks Pay.
+    -->
+    <button onclick="payWithPaystack()" style="width:100%;padding:.75rem;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:var(--sans);font-size:.95rem;font-weight:500;cursor:pointer;margin-top:.5rem">
+      Pay with Paystack →
+    </button>
+
+    <p style="font-size:.72rem;color:var(--ink-faint);text-align:center;margin-top:.9rem">Secured by IntaSend · M-Pesa, Cards accepted</p>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="topbar">
+    <button class="menu-btn" onclick="openSidebar()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="topbar-title" id="topbar-title">Home</span>
+  </div>
+
+  <!-- HOME -->
+  <div class="page active" id="page-home">
+    <div class="hero">
+      <p class="hero-eyebrow">Welcome</p>
+      <h1>A space for<br><em>everything</em> I make.</h1>
+      <div class="hero-divider"></div>
+      <p>Photos, videos, documents, and writing — all in one place. Update this intro to say something true about you.</p>
+    </div>
+    <div class="content-section" style="padding-top:0">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:1rem;max-width:780px">
+        <button onclick="showPage('photos')" class="home-card">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          <p style="font-weight:500;font-size:.9rem;margin-top:.5rem">Photos</p>
+          <p class="home-card-count" id="hc-photos" style="font-size:.74rem;color:var(--ink-faint);margin-top:2px">–</p>
+        </button>
+        <button onclick="showPage('videos')" class="home-card">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <p style="font-weight:500;font-size:.9rem;margin-top:.5rem">Videos</p>
+          <p class="home-card-count" id="hc-videos" style="font-size:.74rem;color:var(--ink-faint);margin-top:2px">–</p>
+        </button>
+        <button onclick="showPage('files')" class="home-card">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <p style="font-weight:500;font-size:.9rem;margin-top:.5rem">Files</p>
+          <p class="home-card-count" id="hc-files" style="font-size:.74rem;color:var(--ink-faint);margin-top:2px">–</p>
+        </button>
+        <button onclick="showPage('blog');filterBlog('all')" class="home-card">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <p style="font-weight:500;font-size:.9rem;margin-top:.5rem">Blog</p>
+          <p class="home-card-count" id="hc-blog" style="font-size:.74rem;color:var(--ink-faint);margin-top:2px">–</p>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHOTOS -->
+  <div class="page" id="page-photos">
+    <div class="content-section">
+      <div class="section-header"><h2 class="section-title">Photos</h2><span class="section-tag">Gallery</span></div>
+      <div class="masonry" id="photos-grid"><div class="empty-state">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- VIDEOS -->
+  <div class="page" id="page-videos">
+    <div class="content-section">
+      <div class="section-header"><h2 class="section-title">Videos</h2><span class="section-tag">Watch</span></div>
+      <div class="masonry" id="videos-grid"><div class="empty-state">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- FILES -->
+  <div class="page" id="page-files">
+    <div class="content-section">
+      <div class="section-header"><h2 class="section-title">Files & Documents</h2><span class="section-tag">PDFs</span></div>
+      <div class="pdf-list" id="files-list"><div class="empty-state">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- BLOG -->
+  <div class="page" id="page-blog">
+    <div class="content-section">
+      <div class="section-header"><h2 class="section-title">Blog</h2><span class="section-tag" id="blog-active-tag">All posts</span></div>
+      <div class="blog-filter-bar">
+        <button class="filter-chip active" id="chip-all"      onclick="filterBlog('all')">All</button>
+        <button class="filter-chip"        id="chip-personal" onclick="filterBlog('personal')">Personal</button>
+        <button class="filter-chip"        id="chip-tech"     onclick="filterBlog('tech')">Tech</button>
+        <button class="filter-chip"        id="chip-creative" onclick="filterBlog('creative')">Creative</button>
+        <button class="filter-chip"        id="chip-life"     onclick="filterBlog('life')">Life</button>
+      </div>
+      <div class="blog-grid" id="blog-grid"><div class="empty-state">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page" id="page-dashboard">
+    <div class="content-section">
+      <div class="section-header"><h2 class="section-title">Activity Dashboard</h2><span class="section-tag">Your stats</span></div>
+      <div id="dash-content"><div class="empty-state">Loading…</div></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .home-card {
+    background: var(--paper-warm); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.3rem; text-align: left;
+    cursor: pointer; transition: transform .2s, box-shadow .2s;
+  }
+  .home-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(26,23,20,.09); }
+</style>
+
+<script>
+  // ── DATA ─────────────────────────────────────────────────────────────────
+  let DB = { photos: [], videos: [], files: [], posts: [], activity: [] };
+
+  async function fetchContent() {
+    try {
+      const res = await fetch('/api/content');
+      DB = await res.json();
+      updateBadges();
+      updateHomeCounts();
+    } catch (e) {
+      console.warn('Could not fetch content (is the server running?)', e);
+    }
+  }
+
+  async function fetchStats() {
+    try {
+      const res = await fetch('/api/stats');
+      return await res.json();
+    } catch { return null; }
+  }
+
+  function updateBadges() {
+    document.getElementById('badge-photos').textContent = DB.photos.length;
+    document.getElementById('badge-videos').textContent = DB.videos.length;
+    document.getElementById('badge-files').textContent  = DB.files.length;
+    document.getElementById('badge-blog').textContent   = DB.posts.length;
+  }
+
+  function updateHomeCounts() {
+    document.getElementById('hc-photos').textContent = DB.photos.length + ' photos';
+    document.getElementById('hc-videos').textContent = DB.videos.length + ' videos';
+    document.getElementById('hc-files').textContent  = DB.files.length  + ' files';
+    document.getElementById('hc-blog').textContent   = DB.posts.length  + ' posts';
+  }
+
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+  }
+
+  function fmtSize(bytes) {
+    if (!bytes) return '';
+    if (bytes > 1024*1024) return (bytes/1024/1024).toFixed(1) + ' MB';
+    return Math.round(bytes/1024) + ' KB';
+  }
+
+  // ── RENDER PAGES ─────────────────────────────────────────────────────────
+  function renderPhotos() {
+    const grid = document.getElementById('photos-grid');
+    if (!DB.photos.length) { grid.innerHTML = '<div class="empty-state">No photos uploaded yet.</div>'; return; }
+    grid.innerHTML = DB.photos.map(p => `
+      <div class="masonry-item">
+        <img src="${p.url}" alt="${p.title}" loading="lazy" />
+        <div class="masonry-info">
+          <p class="masonry-title">${p.title}</p>
+          <p class="masonry-meta">${fmtDate(p.date)}${p.caption ? ' · ' + p.caption : ''}</p>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderVideos() {
+    const grid = document.getElementById('videos-grid');
+    if (!DB.videos.length) { grid.innerHTML = '<div class="empty-state">No videos uploaded yet.</div>'; return; }
+    grid.innerHTML = DB.videos.map(v => `
+      <div class="masonry-item">
+        <video src="${v.url}" controls preload="metadata"></video>
+        <div class="masonry-info">
+          <p class="masonry-title">${v.title}</p>
+          <p class="masonry-meta">${fmtDate(v.date)}</p>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderFiles() {
+    const list = document.getElementById('files-list');
+    if (!DB.files.length) { list.innerHTML = '<div class="empty-state">No files uploaded yet.</div>'; return; }
+    list.innerHTML = DB.files.map(f => `
+      <a href="${f.url}" class="pdf-item" target="_blank" download>
+        <div class="pdf-icon">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zm-8-7H8v-2h2v2zm6 0h-4v-2h4v2zm0 3H8v-2h8v2z"/></svg>
+        </div>
+        <div class="pdf-details">
+          <p class="pdf-name">${f.title}</p>
+          <p class="pdf-meta">PDF · ${fmtSize(f.size)} · ${fmtDate(f.date)}</p>
+        </div>
+        <span class="pdf-arrow">↓</span>
+      </a>`).join('');
+  }
+
+  let allPosts = [];
+
+  function renderBlog(posts) {
+    const grid = document.getElementById('blog-grid');
+    if (!posts.length) { grid.innerHTML = '<div class="empty-state">No posts yet.</div>'; return; }
+    grid.innerHTML = posts.map(p => `
+      <a href="#" class="blog-card" data-tag="${p.tag}">
+        <span class="blog-tag ${p.tag}">${p.tag}</span>
+        <h3 class="blog-title">${p.title}</h3>
+        ${p.excerpt ? `<p class="blog-excerpt">${p.excerpt}</p>` : ''}
+        <p class="blog-date">${fmtDate(p.date)}</p>
+      </a>`).join('');
+  }
+
+  async function renderDashboard() {
+    const stats = await fetchStats();
+    const wrap  = document.getElementById('dash-content');
+    if (!stats) { wrap.innerHTML = '<div class="empty-state">Could not load stats.</div>'; return; }
+
+    const { counts, thisMonth, weeklyActivity, tagBreakdown, activity } = stats;
+    const max = Math.max(counts.photos, counts.videos, counts.files, counts.posts, 1);
+    const tagColors = { personal:'#c4703a', tech:'#3a7cc4', creative:'#4fa832', life:'#9a32c4' };
+    const typeColors = { photo:'#c4703a', video:'#3a7cc4', file:'#e8302a', post:'#4fa832' };
+
+    // heatmap
+    let hmHtml = '';
+    const weeks = 16;
+    weeklyActivity.forEach((count, wi) => {
+      hmHtml += '<div class="heatmap-col">';
+      for (let d = 0; d < 7; d++) {
+        const level = count === 0 ? 0 : count <= 1 ? 1 : count <= 3 ? 2 : count <= 6 ? 3 : 4;
+        hmHtml += `<div class="heatmap-cell" data-level="${level}" title="Week ${wi+1}: ${count} uploads"></div>`;
+      }
+      hmHtml += '</div>';
+    });
+
+    // donut
+    const totalPosts = tagBreakdown.reduce((s,t) => s+t.count, 0) || 1;
+    let offset = 0;
+    const r = 35, circ = 2 * Math.PI * r;
+    const donutArcs = tagBreakdown.filter(t=>t.count>0).map(t => {
+      const frac = t.count / totalPosts;
+      const dash = `${frac * circ} ${circ}`;
+      const arc  = `<circle r="${r}" cx="45" cy="45" fill="none" stroke="${tagColors[t.tag]||'#9e988f'}" stroke-width="16" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 45 45)"/>`;
+      offset += frac * circ;
+      return arc;
+    }).join('');
+
+    wrap.innerHTML = `
+      <div class="dash-grid">
+        <div class="stat-card"><p class="stat-label">Photos</p><p class="stat-value">${counts.photos}</p><p class="stat-sub">+${thisMonth.photos} this month</p></div>
+        <div class="stat-card"><p class="stat-label">Videos</p><p class="stat-value">${counts.videos}</p><p class="stat-sub">+${thisMonth.videos} this month</p></div>
+        <div class="stat-card"><p class="stat-label">PDFs</p><p class="stat-value">${counts.files}</p><p class="stat-sub">+${thisMonth.files} this month</p></div>
+        <div class="stat-card"><p class="stat-label">Blog Posts</p><p class="stat-value">${counts.posts}</p><p class="stat-sub">+${thisMonth.posts} this month</p></div>
+        <div class="stat-card"><p class="stat-label">Total</p><p class="stat-value">${counts.total}</p><p class="stat-sub">All items</p></div>
+      </div>
+
+      <div class="dash-row">
+        <div class="dash-card">
+          <p class="dash-card-title">Uploads by category</p>
+          <div class="bar-chart">
+            ${[['Photos',counts.photos,'#c4703a'],['Videos',counts.videos,'#3a7cc4'],['PDFs',counts.files,'#e8302a'],['Blog',counts.posts,'#4fa832']].map(([label,count,color])=>`
+              <div class="bar-row">
+                <span class="bar-label">${label}</span>
+                <div class="bar-track"><div class="bar-fill" style="width:${Math.round(count/max*100)}%;background:${color}"></div></div>
+                <span class="bar-count">${count}</span>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="dash-card">
+          <p class="dash-card-title">Blog posts by tag</p>
+          <div class="donut-wrap">
+            <svg width="90" height="90" viewBox="0 0 90 90">
+              <circle r="35" cx="45" cy="45" fill="none" stroke="var(--paper-warm)" stroke-width="16"/>
+              ${donutArcs || '<circle r="35" cx="45" cy="45" fill="none" stroke="var(--paper-warm)" stroke-width="16"/>'}
+            </svg>
+            <div class="donut-legend">
+              ${tagBreakdown.map(t=>`<div class="legend-row"><span class="legend-dot" style="background:${tagColors[t.tag]}"></span>${t.tag} — ${t.count}</div>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-card" style="margin-bottom:1.5rem">
+        <p class="dash-card-title">Upload activity — last 16 weeks</p>
+        <div class="heatmap-wrap"><div class="heatmap">${hmHtml}</div></div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:10px">
+          <span style="font-size:.68rem;color:var(--ink-faint)">Less</span>
+          ${[0,1,2,3,4].map(l=>`<div style="width:12px;height:12px;border-radius:2px" data-level="${l}" class="heatmap-cell"></div>`).join('')}
+          <span style="font-size:.68rem;color:var(--ink-faint)">More</span>
+        </div>
+      </div>
+
+      <div class="dash-card">
+        <p class="dash-card-title">Recent activity</p>
+        <div class="activity-list">
+          ${!activity.length ? '<p style="font-size:.84rem;color:var(--ink-faint);padding:.5rem 0">No activity yet.</p>' :
+            activity.map(a=>`
+              <div class="activity-item">
+                <div class="activity-dot" style="background:${typeColors[a.type]||'#9e988f'}"></div>
+                <div>
+                  <p class="activity-text">Added <strong>${a.label}</strong>${a.tag ? ' · ' + a.tag : ''}</p>
+                  <p class="activity-time">${fmtDate(a.date)}</p>
+                </div>
+              </div>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  // ── PAGE ROUTER ───────────────────────────────────────────────────────────
+  const pageNames = { home:'Home', photos:'Photos', videos:'Videos', files:'Files & PDFs', blog:'Blog', dashboard:'Dashboard' };
+
+  async function showPage(id) {
+    ['home','photos','videos','files','blog','dashboard'].forEach(p => {
+      document.getElementById('page-'+p).classList.toggle('active', p === id);
+      document.getElementById('nav-'+p)?.classList.toggle('active', p === id);
+    });
+
+    document.getElementById('topbar-title').textContent = pageNames[id] || id;
+    document.getElementById('blog-filters-sidebar').style.display = id === 'blog' ? 'block' : 'none';
+
+    await fetchContent();
+
+    if (id === 'photos')    renderPhotos();
+    if (id === 'videos')    renderVideos();
+    if (id === 'files')     renderFiles();
+    if (id === 'blog')      { allPosts = [...DB.posts]; renderBlog(allPosts); }
+    if (id === 'dashboard') renderDashboard();
+
+    closeSidebar();
+  }
+
+  // ── BLOG FILTER ───────────────────────────────────────────────────────────
+  function filterBlog(tag) {
+    const filtered = tag === 'all' ? allPosts : allPosts.filter(p => p.tag === tag);
+    renderBlog(filtered);
+
+    const labels = { all:'All posts', personal:'Personal', tech:'Tech', creative:'Creative', life:'Life' };
+    document.getElementById('blog-active-tag').textContent = labels[tag] || tag;
+
+    ['all','personal','tech','creative','life'].forEach(t => {
+      document.getElementById('chip-'+t)?.classList.toggle('active', t === tag);
+      document.getElementById('stag-'+t)?.classList.toggle('active', t === tag);
+    });
+  }
+
+  // ── MOBILE ────────────────────────────────────────────────────────────────
+  function openSidebar()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('open'); }
+  function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
+
+  // ── DONATE MODAL ──────────────────────────────────────────────────────────
+  let selectedAmount = 50;
+
+  function openDonate()  { document.getElementById('donate-modal').classList.add('open'); }
+  function closeDonate() { document.getElementById('donate-modal').classList.remove('open'); }
+
+  document.getElementById('donate-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('donate-modal')) closeDonate();
+  });
+
+  function selectAmount(amt) {
+    selectedAmount = amt;
+    document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+    event.target.classList.add('selected');
+    document.getElementById('custom-amount').value = '';
+  }
+
+  function clearSelectedAmount() {
+    document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+    const val = parseInt(document.getElementById('custom-amount').value);
+    if (val > 0) selectedAmount = val;
+  }
+
+  function payWithPaystack() {
+    const custom = parseInt(document.getElementById('custom-amount').value);
+    const amount = (custom > 0 ? custom : selectedAmount) * 100; // Paystack uses cents
+
+    const handler = PaystackPop.setup({
+      key: 'pk_live_YOUR_PUBLIC_KEY_HERE', // ← paste your Paystack public key
+      email: 'donor@example.com',
+      amount: amount,
+      currency: 'KES',
+      ref: 'donate_' + Date.now(),
+      label: 'Support my work ♥',
+      onSuccess: function(transaction) {
+        alert('Thank you so much! 💛 Ref: ' + transaction.reference);
+        closeDonate();
+      },
+      onCancel: function() { /* user closed, no action needed */ }
+    });
+
+    handler.openIframe();
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  fetchContent();
+</script>
+</body>
+</html>

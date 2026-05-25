@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Upload</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1a1714; --ink-soft: #5a554f; --ink-faint: #9e988f;
+      --paper: #f7f4ef; --paper-warm: #efe9df;
+      --sidebar-bg: #1e1b17;
+      --accent: #c4703a; --accent-pale: #f2e6d9;
+      --border: rgba(26,23,20,0.12); --border-hover: rgba(26,23,20,0.28);
+      --green: #2e8a3e; --red: #c0392b;
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+      --sidebar-w: 220px;
+    }
+
+    body { font-family: var(--sans); background: var(--paper); color: var(--ink); display: flex; min-height: 100vh; }
+
+    /* ── LOGIN GATE ── */
+    #login-gate {
+      position: fixed; inset: 0;
+      background: var(--sidebar-bg);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 999;
+    }
+
+    .login-box {
+      background: #2a2520;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 2.5rem 2rem;
+      width: 340px;
+      text-align: center;
+    }
+
+    .login-box h1 { font-family: var(--serif); color: #fff; font-size: 1.6rem; margin-bottom: 0.4rem; }
+    .login-box p  { font-size: 0.82rem; color: rgba(255,255,255,0.35); margin-bottom: 1.8rem; }
+
+    .login-box input {
+      width: 100%; padding: 0.75rem 1rem;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px; color: #fff; font-family: var(--sans); font-size: 0.95rem;
+      margin-bottom: 1rem; outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .login-box input:focus { border-color: var(--accent); }
+
+    .login-btn {
+      width: 100%; padding: 0.75rem;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 8px;
+      font-family: var(--sans); font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+
+    .login-btn:hover { opacity: 0.88; }
+    .login-error { font-size: 0.8rem; color: #e07070; margin-top: 0.8rem; min-height: 1.2em; }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      position: fixed; top: 0; left: 0; bottom: 0;
+      display: flex; flex-direction: column;
+      z-index: 100;
+    }
+
+    .sidebar-logo { padding: 1.5rem 1.2rem 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .sidebar-logo a { font-family: var(--serif); font-size: 1rem; color: #fff; text-decoration: none; }
+    .sidebar-logo p { font-size: 0.68rem; color: rgba(255,255,255,0.25); margin-top: 2px; letter-spacing: 0.06em; }
+
+    .sidebar-section { padding: 1rem 0.7rem 0.4rem; }
+    .sidebar-label { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.22); padding: 0 0.5rem; margin-bottom: 0.35rem; }
+
+    .s-btn {
+      display: flex; align-items: center; gap: 9px;
+      padding: 0.5rem 0.7rem; border-radius: 7px;
+      color: rgba(200,192,180,0.8); font-size: 0.84rem;
+      cursor: pointer; border: none; background: none;
+      width: 100%; text-align: left;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .s-btn:hover  { background: rgba(255,255,255,0.06); color: #fff; }
+    .s-btn.active { background: rgba(196,112,58,0.18); color: var(--accent); font-weight: 500; }
+    .s-btn svg    { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.75; }
+    .s-btn.active svg { opacity: 1; }
+
+    .sidebar-footer { margin-top: auto; padding: 1rem 1.2rem; border-top: 1px solid rgba(255,255,255,0.07); }
+    .back-link { font-size: 0.78rem; color: rgba(200,192,180,0.5); text-decoration: none; display: flex; align-items: center; gap: 6px; }
+    .back-link:hover { color: rgba(200,192,180,0.9); }
+
+    /* ── MAIN ── */
+    #main { margin-left: var(--sidebar-w); flex: 1; min-width: 0; }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(247,244,239,0.92); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      height: 52px; display: flex; align-items: center; padding: 0 2rem;
+      gap: 0.75rem;
+    }
+
+    .topbar h2 { font-family: var(--serif); font-size: 1rem; font-weight: 400; }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 0.75rem; }
+
+    /* ── PANELS ── */
+    .panel { display: none; padding: 2rem 2.5rem 4rem; }
+    .panel.active { display: block; animation: fadein 0.2s ease; }
+    @keyframes fadein { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+    /* ── DROP ZONE ── */
+    .drop-zone {
+      border: 2px dashed var(--border-hover);
+      border-radius: 14px;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: var(--paper);
+      margin-bottom: 1.5rem;
+    }
+
+    .drop-zone.drag-over { border-color: var(--accent); background: var(--accent-pale); }
+    .drop-zone svg { width: 40px; height: 40px; color: var(--ink-faint); margin-bottom: 0.75rem; }
+    .drop-zone h3 { font-family: var(--serif); font-size: 1.2rem; margin-bottom: 0.3rem; }
+    .drop-zone p  { font-size: 0.82rem; color: var(--ink-faint); }
+
+    .drop-zone input[type="file"] { display: none; }
+
+    /* ── UPLOAD FORM ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-field { display: flex; flex-direction: column; gap: 5px; }
+    .form-field label { font-size: 0.74rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+      padding: 0.6rem 0.85rem;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: var(--sans); font-size: 0.9rem; color: var(--ink);
+      outline: none; transition: border-color 0.15s;
+    }
+
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus { border-color: var(--accent); }
+
+    .form-field textarea { resize: vertical; min-height: 80px; }
+
+    /* ── QUEUE (Pinterest preview) ── */
+    .queue-header { font-size: 0.74rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.9rem; }
+
+    .queue-grid {
+      columns: 3 200px;
+      gap: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .queue-item {
+      break-inside: avoid;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--paper-warm);
+      margin-bottom: 0.9rem;
+      position: relative;
+      transition: transform 0.15s;
+    }
+
+    .queue-item:hover { transform: translateY(-2px); }
+
+    .queue-item img,
+    .queue-item video {
+      width: 100%; display: block;
+      object-fit: cover;
+    }
+
+    .queue-item .q-info {
+      padding: 0.6rem 0.8rem;
+    }
+
+    .queue-item .q-name { font-size: 0.82rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .queue-item .q-size { font-size: 0.72rem; color: var(--ink-faint); margin-top: 1px; }
+
+    .queue-item .q-remove {
+      position: absolute; top: 7px; right: 7px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(0,0,0,0.55); color: #fff;
+      border: none; cursor: pointer; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.15s;
+    }
+
+    .queue-item:hover .q-remove { opacity: 1; }
+
+    .queue-item .q-status {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 3px; background: var(--accent);
+      transform: scaleX(0); transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+
+    .queue-item.uploading .q-status { transform: scaleX(0.6); }
+    .queue-item.done      .q-status { transform: scaleX(1); background: var(--green); }
+    .queue-item.error     .q-status { transform: scaleX(1); background: var(--red); }
+
+    /* ── PDF queue item ── */
+    .queue-item.pdf-item .pdf-thumb {
+      aspect-ratio: 4/3;
+      background: #1e1b17;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .queue-item.pdf-item .pdf-thumb svg { width: 40px; height: 40px; fill: rgba(255,255,255,0.25); }
+
+    /* ── SUBMIT ── */
+    .submit-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+
+    .upload-btn {
+      padding: 0.65rem 1.6rem;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 20px;
+      font-family: var(--sans); font-size: 0.88rem; font-weight: 500;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+
+    .upload-btn:hover { opacity: 0.88; }
+    .upload-btn:disabled { opacity: 0.45; cursor: default; }
+
+    .upload-status { font-size: 0.84rem; color: var(--ink-soft); }
+
+    /* ── BLOG FORM ── */
+    .blog-form { max-width: 680px; }
+    .blog-form .form-field { margin-bottom: 1rem; }
+
+    /* ── LIBRARY GRID ── */
+    .library-filter {
+      display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+    }
+
+    .lib-chip {
+      font-size: 0.76rem; font-weight: 500; padding: 0.3rem 0.85rem;
+      border-radius: 20px; border: 1px solid var(--border);
+      background: var(--paper); color: var(--ink-soft);
+      cursor: pointer; transition: all 0.15s;
+    }
+
+    .lib-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .library-grid {
+      columns: 3 180px;
+      gap: 0.9rem;
+    }
+
+    .lib-item {
+      break-inside: avoid;
+      border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--border); background: var(--paper-warm);
+      margin-bottom: 0.9rem; position: relative;
+      transition: transform 0.15s;
+    }
+
+    .lib-item:hover { transform: translateY(-2px); }
+    .lib-item img { width: 100%; display: block; object-fit: cover; }
+
+    .lib-item .lib-overlay {
+      position: absolute; inset: 0;
+      background: rgba(26,23,20,0); display: flex;
+      align-items: flex-end; justify-content: flex-end;
+      padding: 8px; transition: background 0.2s;
+    }
+
+    .lib-item:hover .lib-overlay { background: rgba(26,23,20,0.35); }
+
+    .lib-del {
+      opacity: 0; width: 28px; height: 28px; border-radius: 6px;
+      background: #c0392b; color: #fff; border: none;
+      cursor: pointer; font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.15s;
+    }
+
+    .lib-item:hover .lib-del { opacity: 1; }
+
+    .lib-info { padding: 0.6rem 0.8rem; }
+    .lib-name { font-size: 0.8rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lib-meta { font-size: 0.7rem; color: var(--ink-faint); margin-top: 1px; }
+
+    .lib-empty { font-size: 0.88rem; color: var(--ink-faint); padding: 2rem 0; }
+
+    /* ── POST LIST ── */
+    .post-list { display: flex; flex-direction: column; gap: 0.8rem; }
+
+    .post-row {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 0.9rem 1.1rem;
+      background: var(--paper); border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .post-tag-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .post-row-title { font-size: 0.9rem; font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .post-row-date { font-size: 0.74rem; color: var(--ink-faint); flex-shrink: 0; }
+    .post-del { padding: 0.3rem 0.7rem; font-size: 0.76rem; border: 1px solid rgba(192,57,43,0.3); color: #c0392b; background: none; border-radius: 6px; cursor: pointer; flex-shrink: 0; transition: background 0.15s; }
+    .post-del:hover { background: rgba(192,57,43,0.08); }
+
+    @media (max-width: 700px) {
+      #sidebar { display: none; }
+      #main { margin-left: 0; }
+      .form-grid { grid-template-columns: 1fr; }
+      .panel { padding: 1.5rem 1.2rem 3rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN GATE -->
+<div id="login-gate">
+  <div class="login-box">
+    <h1>Admin</h1>
+    <p>Enter your password to continue</p>
+    <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="login-btn" onclick="doLogin()">Enter</button>
+    <p class="login-error" id="login-err"></p>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <a href="#">Admin Panel</a>
+    <p>Your personal site</p>
+  </div>
+
+  <div class="sidebar-section">
+    <p class="sidebar-label">Upload</p>
+    <button class="s-btn active" id="s-media" onclick="showPanel('media')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+      Photos / Videos
+    </button>
+    <button class="s-btn" id="s-pdf" onclick="showPanel('pdf')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><polyline points="14 2 14 8 20 8"/></svg>
+      PDFs & Files
+    </button>
+    <button class="s-btn" id="s-blog" onclick="showPanel('blog')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      New Blog Post
+    </button>
+  </div>
+
+  <div class="sidebar-section">
+    <p class="sidebar-label">Manage</p>
+    <button class="s-btn" id="s-library" onclick="showPanel('library')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Content Library
+    </button>
+  </div>
+
+  <div class="sidebar-footer">
+    <a href="/index.html" class="back-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Back to site
+    </a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="topbar">
+    <h2 id="panel-title">Upload Photos & Videos</h2>
+    <div class="topbar-right">
+      <span id="upload-count" style="font-size:.78rem;color:var(--ink-faint)"></span>
+    </div>
+  </div>
+
+  <!-- ══ PANEL: MEDIA UPLOAD ══ -->
+  <div class="panel active" id="panel-media">
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <input type="file" id="file-input" multiple accept="image/*,video/*" onchange="handleFiles(this.files,'media')" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+      <h3>Drop photos & videos here</h3>
+      <p>or click to browse — JPG, PNG, GIF, WEBP, MP4, MOV, WEBM</p>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-field">
+        <label>Default caption</label>
+        <input type="text" id="media-caption" placeholder="Optional caption for all files" />
+      </div>
+      <div class="form-field">
+        <label>Type override</label>
+        <select id="media-type-override">
+          <option value="auto">Auto-detect (recommended)</option>
+          <option value="photo">Force: Photo</option>
+          <option value="video">Force: Video</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="media-queue-wrap" style="display:none">
+      <p class="queue-header" id="queue-count"></p>
+      <div class="queue-grid" id="media-queue"></div>
+    </div>
+
+    <div class="submit-row">
+      <button class="upload-btn" id="media-upload-btn" onclick="uploadQueue('media')" disabled>Upload all</button>
+      <span class="upload-status" id="media-status"></span>
+    </div>
+  </div>
+
+  <!-- ══ PANEL: PDF UPLOAD ══ -->
+  <div class="panel" id="panel-pdf">
+    <div class="drop-zone" id="drop-zone-pdf" onclick="document.getElementById('pdf-input').click()">
+      <input type="file" id="pdf-input" multiple accept=".pdf" onchange="handleFiles(this.files,'pdf')" />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <h3>Drop PDFs here</h3>
+      <p>or click to browse — PDF files only, up to 100 MB each</p>
+    </div>
+
+    <div id="pdf-queue-wrap" style="display:none">
+      <p class="queue-header" id="pdf-queue-count"></p>
+      <div class="queue-grid" id="pdf-queue"></div>
+    </div>
+
+    <div class="submit-row">
+      <button class="upload-btn" id="pdf-upload-btn" onclick="uploadQueue('pdf')" disabled>Upload all</button>
+      <span class="upload-status" id="pdf-status"></span>
+    </div>
+  </div>
+
+  <!-- ══ PANEL: BLOG POST ══ -->
+  <div class="panel" id="panel-blog">
+    <div class="blog-form">
+      <div class="form-field" style="margin-bottom:1rem">
+        <label>Post title *</label>
+        <input type="text" id="post-title" placeholder="Your post title" />
+      </div>
+      <div class="form-field" style="margin-bottom:1rem">
+        <label>Tag / Category</label>
+        <select id="post-tag">
+          <option value="personal">Personal</option>
+          <option value="tech">Tech</option>
+          <option value="creative">Creative</option>
+          <option value="life">Life</option>
+        </select>
+      </div>
+      <div class="form-field" style="margin-bottom:1rem">
+        <label>Excerpt (shown on cards)</label>
+        <textarea id="post-excerpt" placeholder="A short 2–3 sentence summary..."></textarea>
+      </div>
+      <div class="form-field" style="margin-bottom:1.5rem">
+        <label>Full content</label>
+        <textarea id="post-content" style="min-height:200px" placeholder="Write your full post here..."></textarea>
+      </div>
+      <div class="submit-row">
+        <button class="upload-btn" onclick="publishPost()">Publish post</button>
+        <span class="upload-status" id="post-status"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL: LIBRARY ══ -->
+  <div class="panel" id="panel-library">
+    <div class="library-filter">
+      <button class="lib-chip active" onclick="loadLibrary('all')">All</button>
+      <button class="lib-chip" onclick="loadLibrary('photos')">Photos</button>
+      <button class="lib-chip" onclick="loadLibrary('videos')">Videos</button>
+      <button class="lib-chip" onclick="loadLibrary('files')">PDFs</button>
+      <button class="lib-chip" onclick="loadLibrary('posts')">Blog Posts</button>
+    </div>
+    <div id="library-content"></div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+  // ── State ────────────────────────────────────────────────────────────────
+  let adminPW  = '';
+  let queues   = { media: [], pdf: [] };
+
+  // ── Login ────────────────────────────────────────────────────────────────
+  async function doLogin() {
+    const pw  = document.getElementById('pw-input').value.trim();
+    const err = document.getElementById('login-err');
+    if (!pw) return;
+
+    const res  = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      adminPW = pw;
+      document.getElementById('login-gate').style.display = 'none';
+    } else {
+      err.textContent = 'Wrong password. Try again.';
+      document.getElementById('pw-input').value = '';
+    }
+  }
+
+  // ── Panel switcher ───────────────────────────────────────────────────────
+  const panelTitles = {
+    media: 'Upload Photos & Videos',
+    pdf:   'Upload PDFs & Files',
+    blog:  'New Blog Post',
+    library: 'Content Library'
+  };
+
+  function showPanel(id) {
+    ['media','pdf','blog','library'].forEach(p => {
+      document.getElementById('panel-'+p).classList.toggle('active', p === id);
+      document.getElementById('s-'+p)?.classList.toggle('active', p === id);
+    });
+    document.getElementById('panel-title').textContent = panelTitles[id];
+    if (id === 'library') loadLibrary('all');
+  }
+
+  // ── Drag & Drop ──────────────────────────────────────────────────────────
+  ['drop-zone','drop-zone-pdf'].forEach(zoneId => {
+    const zone = document.getElementById(zoneId);
+    if (!zone) return;
+    const qType = zoneId === 'drop-zone' ? 'media' : 'pdf';
+
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      handleFiles(e.dataTransfer.files, qType);
+    });
+  });
+
+  // ── Handle dropped / selected files ─────────────────────────────────────
+  function handleFiles(files, qType) {
+    const arr = Array.from(files);
+    arr.forEach(f => {
+      if (queues[qType].find(q => q.file.name === f.name && q.file.size === f.size)) return;
+      queues[qType].push({ file: f, id: Math.random().toString(36).slice(2), status: 'pending' });
+    });
+    renderQueue(qType);
+  }
+
+  function renderQueue(qType) {
+    const q       = queues[qType];
+    const gridId  = qType === 'media' ? 'media-queue' : 'pdf-queue';
+    const wrapId  = qType === 'media' ? 'media-queue-wrap' : 'pdf-queue-wrap';
+    const countId = qType === 'media' ? 'queue-count' : 'pdf-queue-count';
+    const btnId   = qType === 'media' ? 'media-upload-btn' : 'pdf-upload-btn';
+    const grid    = document.getElementById(gridId);
+
+    document.getElementById(wrapId).style.display = q.length ? 'block' : 'none';
+    document.getElementById(countId).textContent  = `${q.length} file${q.length > 1 ? 's' : ''} queued`;
+    document.getElementById(btnId).disabled       = q.length === 0;
+
+    grid.innerHTML = q.map(item => {
+      const isPDF  = item.file.type === 'application/pdf';
+      const isVid  = item.file.type.startsWith('video/');
+      const isImg  = item.file.type.startsWith('image/');
+      const src    = (isImg || isVid) ? URL.createObjectURL(item.file) : '';
+      const sizeKB = (item.file.size / 1024).toFixed(0);
+
+      let preview = '';
+      if (isImg) preview = `<img src="${src}" alt="" style="max-height:220px;width:100%;object-fit:cover" />`;
+      else if (isVid) preview = `<video src="${src}" muted style="max-height:180px;width:100%;object-fit:cover"></video>`;
+      else if (isPDF) preview = `<div class="pdf-thumb"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg></div>`;
+
+      return `
+        <div class="queue-item ${isPDF ? 'pdf-item' : ''} ${item.status}" id="qi-${item.id}">
+          ${preview}
+          <div class="q-info">
+            <p class="q-name">${item.file.name}</p>
+            <p class="q-size">${sizeKB} KB</p>
+          </div>
+          <button class="q-remove" onclick="removeFromQueue('${item.id}','${qType}')" title="Remove">✕</button>
+          <div class="q-status"></div>
+        </div>`;
+    }).join('');
+  }
+
+  function removeFromQueue(id, qType) {
+    queues[qType] = queues[qType].filter(q => q.id !== id);
+    renderQueue(qType);
+  }
+
+  // ── Upload queue ─────────────────────────────────────────────────────────
+  async function uploadQueue(qType) {
+    const q      = queues[qType];
+    const btnId  = qType === 'media' ? 'media-upload-btn' : 'pdf-upload-btn';
+    const statId = qType === 'media' ? 'media-status' : 'pdf-status';
+    const caption = document.getElementById('media-caption')?.value || '';
+    const override = document.getElementById('media-type-override')?.value || 'auto';
+
+    document.getElementById(btnId).disabled = true;
+    document.getElementById(statId).textContent = 'Uploading…';
+
+    let done = 0;
+    for (const item of q) {
+      const el  = document.getElementById('qi-'+item.id);
+      el?.classList.add('uploading');
+
+      const fd  = new FormData();
+      fd.append('file', item.file);
+      fd.append('title', item.file.name.replace(/\.[^.]+$/, ''));
+      fd.append('caption', caption);
+
+      // Determine type
+      let type = 'file';
+      if (qType === 'pdf') {
+        type = 'file';
+      } else if (override !== 'auto') {
+        type = override;
+      } else {
+        type = item.file.type.startsWith('video/') ? 'video' : 'photo';
+      }
+      fd.append('type', type);
+
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'x-admin-password': adminPW },
+          body: fd
+        });
+
+        if (res.ok) {
+          el?.classList.remove('uploading');
+          el?.classList.add('done');
+          item.status = 'done';
+          done++;
+        } else {
+          el?.classList.remove('uploading');
+          el?.classList.add('error');
+        }
+      } catch {
+        el?.classList.remove('uploading');
+        el?.classList.add('error');
+      }
+    }
+
+    document.getElementById(statId).textContent = `✓ ${done} of ${q.length} uploaded`;
+    // Clear done items after a beat
+    setTimeout(() => {
+      queues[qType] = queues[qType].filter(i => i.status !== 'done');
+      renderQueue(qType);
+      document.getElementById(statId).textContent = '';
+    }, 2000);
+  }
+
+  // ── Publish blog post ────────────────────────────────────────────────────
+  async function publishPost() {
+    const title   = document.getElementById('post-title').value.trim();
+    const tag     = document.getElementById('post-tag').value;
+    const excerpt = document.getElementById('post-excerpt').value.trim();
+    const content = document.getElementById('post-content').value.trim();
+    const stat    = document.getElementById('post-status');
+
+    if (!title) { stat.textContent = '⚠ Title is required'; return; }
+
+    stat.textContent = 'Publishing…';
+    const res  = await fetch('/api/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPW },
+      body: JSON.stringify({ title, tag, excerpt, content })
+    });
+
+    if (res.ok) {
+      stat.textContent = '✓ Published!';
+      document.getElementById('post-title').value   = '';
+      document.getElementById('post-excerpt').value = '';
+      document.getElementById('post-content').value = '';
+      setTimeout(() => { stat.textContent = ''; }, 2500);
+    } else {
+      stat.textContent = '✗ Error publishing';
+    }
+  }
+
+  // ── Library ──────────────────────────────────────────────────────────────
+  async function loadLibrary(filter) {
+    document.querySelectorAll('.lib-chip').forEach(c => {
+      c.classList.toggle('active', c.textContent.toLowerCase().trim() === (filter === 'all' ? 'all' : filter === 'photos' ? 'photos' : filter === 'videos' ? 'videos' : filter === 'files' ? 'pdfs' : 'blog posts'));
+    });
+
+    const res  = await fetch('/api/content');
+    const db   = await res.json();
+    const wrap = document.getElementById('library-content');
+
+    const tagColors = { personal:'#c4703a', tech:'#3a7cc4', creative:'#4fa832', life:'#9a32c4' };
+
+    let html = '';
+
+    function mediaBlock(items, type, label) {
+      if (!items.length) return `<p class="lib-empty">No ${label} yet.</p>`;
+      return `<div class="library-grid">${items.map(item => {
+        const isVid = type === 'videos';
+        const isPDF = type === 'files';
+        let preview = '';
+        if (!isVid && !isPDF) preview = `<img src="${item.url}" alt="${item.title}" style="max-height:200px" />`;
+        else if (isVid) preview = `<video src="${item.url}" muted style="max-height:160px;width:100%;object-fit:cover"></video>`;
+        else preview = `<div style="aspect-ratio:4/3;background:#1e1b17;display:flex;align-items:center;justify-content:center"><svg width="36" height="36" viewBox="0 0 24 24" fill="rgba(255,255,255,.25)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg></div>`;
+        return `
+          <div class="lib-item">
+            ${preview}
+            <div class="lib-overlay">
+              <button class="lib-del" onclick="deleteItem('${type.replace(/s$/,'')}','${item.id}')" title="Delete">✕</button>
+            </div>
+            <div class="lib-info">
+              <p class="lib-name">${item.title}</p>
+              <p class="lib-meta">${new Date(item.date).toLocaleDateString()}</p>
+            </div>
+          </div>`;
+      }).join('')}</div>`;
+    }
+
+    if (filter === 'all' || filter === 'photos') {
+      html += `<p class="queue-header" style="margin-bottom:.8rem">Photos (${db.photos.length})</p>`;
+      html += mediaBlock(db.photos, 'photos', 'photos');
+      html += '<div style="height:2rem"></div>';
+    }
+    if (filter === 'all' || filter === 'videos') {
+      html += `<p class="queue-header" style="margin-bottom:.8rem">Videos (${db.videos.length})</p>`;
+      html += mediaBlock(db.videos, 'videos', 'videos');
+      html += '<div style="height:2rem"></div>';
+    }
+    if (filter === 'all' || filter === 'files') {
+      html += `<p class="queue-header" style="margin-bottom:.8rem">PDFs (${db.files.length})</p>`;
+      html += mediaBlock(db.files, 'files', 'files');
+      html += '<div style="height:2rem"></div>';
+    }
+    if (filter === 'all' || filter === 'posts') {
+      html += `<p class="queue-header" style="margin-bottom:.8rem">Blog Posts (${db.posts.length})</p>`;
+      if (!db.posts.length) {
+        html += '<p class="lib-empty">No posts yet.</p>';
+      } else {
+        html += `<div class="post-list">${db.posts.map(p => `
+          <div class="post-row">
+            <div class="post-tag-dot" style="background:${tagColors[p.tag]||'#9e988f'}"></div>
+            <p class="post-row-title">${p.title}</p>
+            <p class="post-row-date">${new Date(p.date).toLocaleDateString()}</p>
+            <button class="post-del" onclick="deleteItem('post','${p.id}')">Delete</button>
+          </div>`).join('')}</div>`;
+      }
+    }
+
+    wrap.innerHTML = html;
+  }
+
+  async function deleteItem(type, id) {
+    if (!confirm('Delete this item? This cannot be undone.')) return;
+    const res = await fetch(`/api/item/${type}/${id}`, {
+      method: 'DELETE',
+      headers: { 'x-admin-password': adminPW }
+    });
+    if (res.ok) loadLibrary('all');
+  }
+</script>
+</body>
+</html>
